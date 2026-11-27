@@ -266,13 +266,29 @@ body { margin: 0; }
     }
     if (signedOut) return;
     const parts = [];
-    for(let start=0;start<release.parts;start+=5) {
-      const rows = await request('/rest/v1/myon_release_parts?select=part,body&release_id=eq.'+release.digest+'&order=part.asc&limit=5&offset='+start,'GET',undefined,session.access_token);
+    const pageSize = 5;
+    const pagesPerBatch = 3;
+    for (let batchStart = 0; batchStart < release.parts; batchStart += pageSize * pagesPerBatch) {
+      const requests = [];
+      const batchEnd = Math.min(batchStart + pageSize * pagesPerBatch, release.parts);
+      for (let start = batchStart; start < batchEnd; start += pageSize) {
+        const path = '/rest/v1/myon_release_parts?select=part,body&release_id=eq.'
+          + release.digest + '&order=part.asc&limit=' + pageSize + '&offset=' + start;
+        requests.push(request(path, 'GET', undefined, session.access_token));
+      }
+      // Promise.all preserves request order even when pages arrive out of order.
+      const pages = await Promise.all(requests);
       if (signedOut) return;
-      if(!Array.isArray(rows) || rows.length!==Math.min(5,release.parts-start)) throw Error('배포 파일을 읽을 수 없어요.');
-      for(const row of rows) {
-        if(row.part!==parts.length || typeof row.body!=='string')throw Error('배포 파일을 읽을 수 없어요.');
-        parts.push(row.body);
+      for (const rows of pages) {
+        if (!Array.isArray(rows) || rows.length !== Math.min(pageSize, release.parts - parts.length)) {
+          throw Error('배포 파일을 읽을 수 없어요.');
+        }
+        for (const row of rows) {
+          if (row.part !== parts.length || typeof row.body !== 'string') {
+            throw Error('배포 파일을 읽을 수 없어요.');
+          }
+          parts.push(row.body);
+        }
       }
     }
     const binary = atob(parts.join(''));
