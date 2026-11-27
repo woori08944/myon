@@ -246,7 +246,7 @@ body { margin: 0; }
       sessionStorage.removeItem('myon125.drive-token');
     } else {
       session = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
-      if (!session) { showSignIn('마이온에 사용할 Google 계정을 선택해 주세요.'); return; }
+      if (!session) { showSignIn('사용할 Google 계정을 선택하세요.'); return; }
       if (session.expires_at < Date.now()/1000+60) {
         session = sessionOf(await request('/auth/v1/token?grant_type=refresh_token','POST',{refresh_token:session.refresh_token}));
       }
