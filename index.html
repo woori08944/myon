@@ -129,6 +129,13 @@ body { margin: 0; }
 #signout { margin-top: 12px; }
 .myone-entrance-panel a { color: #14392e; text-underline-offset: .2em; }
 </style>
+<link rel="manifest" href="/myon.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/myon-icon.svg">
+<meta name="application-name" content="마이온">
+<meta name="apple-mobile-web-app-title" content="마이온">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#123C30">
 </head>
 <body class="myone-entrance">
 <div class="myone-entrance-card">
@@ -147,7 +154,7 @@ body { margin: 0; }
 (async () => {
   const base = 'https://rwzktbohidfjhmykqjjq.supabase.co';
   const callback = 'https://myon.wdwave.kr/';
-  const release = {"digest":"475e358344183cbbd67e9f0c65e4ac94100666a88fcbc5d198ec8c1cd00c5de5","gzip":"ad4bd1a0033d5ab99bb17b12cf7e68b8bf679a31a21b6e50c591301f0c65e0c3","size":8960449,"compressed":4052365,"parts":46};
+  const release = {"digest":"8d4ef374b984838fff109b375be902345a625221bd905ee899154251736adffc","gzip":"dc5940e1eb2e42fdd50efbf649e8472b25199cfeb4f15eaaf8b346d7a03e659d","size":8960879,"compressed":4052649,"parts":46};
   const apiKey = 'sb_publishable_ahMFRBwmwVpKV6QqivsU7A_tu-Kw9bC';
   const workspaceScopes = ['drive.file','calendar.events.readonly','tasks.readonly']
     .map(name => 'https://www.googleapis.com/auth/' + name).join(' ');
