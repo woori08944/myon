@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0eAAwsnyu7ZkCJg7xAkhcexiIFV8YdrUdPuL72nMs2Y='; style-src 'unsafe-inline'; connect-src https://rwzktbohidfjhmykqjjq.supabase.co; base-uri 'none'; form-action 'none'">
+<title>마이온 로그인 · MY ONE</title>
+<style>
+:root{color-scheme:light;font:16px/1.6 system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#213a32;background:#f6f3eb}
+*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:20px}main{background:#fffdf7;border:1px solid #ddd9c9;border-radius:20px;padding:clamp(25px,6vw,44px);width:min(100%,410px)}h1{margin:8px 0 20px;font-size:clamp(25px,6vw,32px);letter-spacing:-.05em}small{color:#315f51;font-weight:700;letter-spacing:.06em}p{margin:0 0 18px;overflow-wrap:anywhere}button{font:inherit;font-weight:650;border:0;border-radius:10px;background:#285947;color:white;min-height:46px;width:100%;padding:8px 12px;cursor:pointer}button:disabled{opacity:.6}button:focus-visible{outline:3px solid #af7132;outline-offset:3px}[hidden]{display:none}
+</style>
+</head>
+<body><main><small>MY ONE</small><h1>마이온 로그인</h1>
+<p id="status" role="status" aria-live="polite">로그인 상태를 확인하고 있어요.</p>
+<button id="signin" type="button" hidden>Google로 로그인</button>
+<button id="signout" type="button" hidden>로그아웃</button>
+<noscript>마이온에 로그인하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+</main>
+<script>
+(async () => {
+  const base = 'https://rwzktbohidfjhmykqjjq.supabase.co';
+  const callback = 'https://myon.wdwave.kr/login.html';
+  const apiKey = 'sb_publishable_ahMFRBwmwVpKV6QqivsU7A_tu-Kw9bC';
+  const flowKey = 'myon147.login-flow';
+  const sessionKey = 'myon125.session';
+  const status = document.getElementById('status');
+  const signIn = document.getElementById('signin');
+  const signOut = document.getElementById('signout');
+  const encode = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const clear = () => {
+    for (const key of [sessionKey, flowKey, 'myon125.drive-token', 'myon125.oauth-flow']) sessionStorage.removeItem(key);
+  };
+  const showSignIn = message => {
+    status.textContent = message;
+    signIn.hidden = false;
+    signIn.disabled = false;
+    signOut.hidden = true;
+  };
+  async function request(path, method, body, token) {
+    const headers = {apikey:apiKey};
+    if (token) headers.Authorization = 'Bearer ' + token;
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    const r = await fetch(base + path, {method,headers,body:body === undefined ? undefined : JSON.stringify(body), cache:'no-store', signal:AbortSignal.timeout(15000)});
+    if (!r.ok) { const error = new Error('Request failed'); error.status = r.status; throw error; }
+    return r.status === 204 ? null : r.json();
+  }
+  function sessionOf(grant) {
+    if (!grant?.access_token || !grant?.refresh_token) throw new Error('Invalid session');
+    return {access_token:grant.access_token,refresh_token:grant.refresh_token,expires_at:grant.expires_at || Math.floor(Date.now()/1000)+(grant.expires_in || 3600)};
+  }
+  async function revoke(token) {
+    if (token) await request('/auth/v1/logout?scope=local','POST',undefined,token).catch(() => {});
+  }
+  if (location.origin + location.pathname !== callback) {
+    status.textContent = 'myon.wdwave.kr에서 로그인해 주세요.'; return;
+  }
+  signIn.onclick = async () => {
+    signIn.disabled = true;
+    try {
+      const settings = await request('/auth/v1/settings','GET');
+      if (settings?.external?.google !== true) {
+        showSignIn('마이온의 Google 로그인 연결을 준비하고 있어요.'); return;
+      }
+      const verifier = encode(crypto.getRandomValues(new Uint8Array(48)));
+      const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
+      sessionStorage.setItem(flowKey,JSON.stringify({verifier,created:Date.now()}));
+      const url = new URL(base+'/auth/v1/authorize');
+      url.search = new URLSearchParams({provider:'google',redirect_to:callback,code_challenge:encode(new Uint8Array(digest)),code_challenge_method:'s256',prompt:'select_account'});
+      location.assign(url.href);
+    } catch { showSignIn('로그인을 시작하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.'); }
+  };
+  signOut.onclick = async () => {
+    signOut.disabled = true;
+    let token;
+    try { token = JSON.parse(sessionStorage.getItem(sessionKey))?.access_token; } catch {}
+    clear();
+    await revoke(token);
+    signOut.disabled = false;
+    showSignIn('로그아웃했어요.');
+  };
+  let session;
+  try {
+    const url = new URL(location.href);
+    const code = url.searchParams.get('code');
+    if (url.search || url.hash) history.replaceState(null,'',location.pathname);
+    if (url.searchParams.has('error') || new URLSearchParams(url.hash.slice(1)).has('error')) {
+      sessionStorage.removeItem(flowKey); showSignIn('Google 로그인이 완료되지 않았어요. 다시 시도할 수 있어요.'); return;
+    }
+    if (code) {
+      const flow = JSON.parse(sessionStorage.getItem(flowKey) || 'null');
+      sessionStorage.removeItem(flowKey);
+      if (!flow || !Number.isFinite(flow.created) || Date.now()-flow.created>15*60*1000 || !flow.verifier) {
+        showSignIn('로그인을 시작했던 창에서 다시 시도해 주세요.'); return;
+      }
+      session = sessionOf(await request('/auth/v1/token?grant_type=pkce','POST',{auth_code:code,code_verifier:flow.verifier}));
+    } else {
+      session = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
+      if (!session) { showSignIn('마이온에 사용할 Google 계정을 선택해 주세요.'); return; }
+      if (session.expires_at < Date.now()/1000+60) {
+        session = sessionOf(await request('/auth/v1/token?grant_type=refresh_token','POST',{refresh_token:session.refresh_token}));
+      }
+    }
+    if ((await request('/rest/v1/rpc/myon_claim_owner_147','POST',{},session.access_token)) !== true) {
+      clear(); await revoke(session.access_token); showSignIn('등록된 마이온 계정으로 다시 로그인해 주세요.'); return;
+    }
+    sessionStorage.setItem(sessionKey,JSON.stringify(sessionOf(session)));
+    signIn.hidden = true;
+    signOut.hidden = false;
+    status.textContent = '마이온에 로그인했어요. 내 계정 확인을 마쳤어요.';
+  } catch (error) {
+    if ([400,401,403].includes(error.status)) clear();
+    showSignIn('마이온이 계정을 확인하지 못했어요. 다시 시도해 주세요.');
+  }
+})();
+</script></body></html>
