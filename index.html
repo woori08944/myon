@@ -14,7 +14,7 @@ body { margin: 0; }
 
 .myone-entrance {
   --entry-ink: #14392e;
-  --entry-action: #067550;
+  --entry-action: #245744;
   display: grid;
   place-items: center;
   min-height: 100vh;
@@ -22,22 +22,22 @@ body { margin: 0; }
   padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
     max(18px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   color: var(--entry-ink);
-  background: radial-gradient(ellipse at 78% 8%, #fbf7ec, transparent 62%), #efede3;
+  background: #f3f1eb;
 }
 .myone-entrance-card {
   display: grid;
-  width: min(100%, 32rem);
+  width: min(100%, 29rem);
   overflow: hidden;
-  border: 1px solid #dcded0;
-  border-radius: 24px;
+  border: 1px solid #deddd3;
+  border-radius: 20px;
   background: #fffefa;
-  box-shadow: 0 22px 56px #27473a16, 0 4px 14px #27473a0a;
+  box-shadow: 0 12px 32px #182b2010;
 }
 .myone-entrance-photo {
   display: block;
   width: 100%;
-  height: clamp(13rem, 47vh, 29rem);
-  height: clamp(13rem, 47dvh, 29rem);
+  height: clamp(11rem, 35vh, 16.5rem);
+  height: clamp(11rem, 35dvh, 16.5rem);
   object-fit: cover;
   object-position: 72% center;
   color: transparent;
@@ -45,54 +45,51 @@ body { margin: 0; }
 }
 .myone-entrance-panel {
   min-width: 0;
-  padding: clamp(27px, 5.5vh, 45px) clamp(20px, 7vw, 40px) clamp(30px, 5.5vh, 46px);
+  padding: 25px clamp(22px, 6.5vw, 34px) 28px;
   border-top: 1px solid #e3e3d5;
 }
-.myone-entrance-panel::before {
-  content: "";
-  display: block;
-  width: 32px;
-  height: 3px;
-  margin-bottom: 14px;
-  border-radius: 2px;
-  background: #c7913d;
-}
 .myone-entrance h1 {
-  margin: 0 0 clamp(23px, 4vh, 32px);
+  margin: 0 0 20px;
   color: inherit;
-  font-size: clamp(2.4rem, 11vw, 3.25rem);
+  font-size: clamp(2.25rem, 9vw, 3rem);
   line-height: 1;
-  font-weight: 790;
+  font-weight: 730;
   letter-spacing: -.06em;
 }
 .myone-google-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 56px;
-  padding: 11px 15px;
-  border: 1px solid transparent;
-  border-radius: 13px;
-  background: var(--entry-action);
-  color: #ffffff;
-  box-shadow: 0 4px 10px #06755026;
+  width: fit-content;
+  max-width: 100%;
+  min-width: min(11rem, 100%);
+  min-height: 46px;
+  padding: 10px 20px;
+  border: 1px solid #788e80;
+  border-radius: 10px;
+  background: #edf3ee;
+  color: var(--entry-action);
   font: inherit;
-  font-weight: 700;
+  font-weight: 650;
   line-height: 1.35;
 }
-.myone-google-button:hover { background: #085e45; }
+@media (hover: hover) {
+  .myone-google-button:not(:disabled):hover { background: #e0ece3; }
+}
 .myone-entrance :is(button, a):focus-visible { outline: 2px solid #2d6a56; outline-offset: 3px; }
-@media (min-width: 760px) {
+@media (min-width: 600px) and (max-width: 899px) {
+  .myone-entrance-card { width: min(100%, 34rem); }
+  .myone-entrance-photo { height: clamp(13rem, 43vw, 19rem); }
+  .myone-entrance-panel { padding: 30px 38px 34px; }
+}
+@media (min-width: 900px) {
   .myone-entrance {
     padding: 36px clamp(30px, 5vw, 80px);
   }
   .myone-entrance-card {
-    grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
-    width: min(100%, 69rem);
-    min-height: clamp(24rem, 65vh, 37rem);
-    border-radius: 28px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    width: min(100%, 57rem);
+    min-height: clamp(22rem, 55vh, 29rem);
   }
   .myone-entrance-visual {
     position: relative;
@@ -109,23 +106,22 @@ body { margin: 0; }
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    padding: 44px clamp(31px, 4.65vw, 77px);
+    padding: 36px clamp(32px, 4vw, 56px);
     border-top: 0;
     border-left: 1px solid #e3e3d5;
   }
   .myone-entrance h1 {
-    font-size: clamp(2.65rem, 4.4vw, 4.15rem);
+    font-size: clamp(2.75rem, 4vw, 3.5rem);
   }
-  .myone-google-button { max-width: 20rem; }
 }
-@media (max-width: 759px) and (max-height: 670px) {
-  .myone-entrance-photo { height: clamp(10.5rem, 43vh, 18rem); }
-  .myone-entrance-panel { padding-block: 25px 28px; }
+@media (max-width: 899px) and (max-height: 670px) {
+  .myone-entrance-photo { height: clamp(8rem, 33vh, 13rem); }
+  .myone-entrance-panel { padding-block: 20px 23px; }
 }
 
 .myone-google-button { cursor: pointer; }
 .myone-google-button:disabled { opacity: .65; cursor: wait; }
-#status, noscript { margin: 16px 0 0; font-size: .9rem; color: #485b51; overflow-wrap: anywhere; }
+#status, noscript { margin: 12px 0 0; font-size: .875rem; color: #485b51; word-break: keep-all; overflow-wrap: anywhere; }
 #signout { margin-top: 12px; }
 .myone-entrance-panel a { color: #14392e; text-underline-offset: .2em; }
 </style>
