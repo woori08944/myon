@@ -96,8 +96,9 @@ button:disabled { opacity: .65; cursor: wait; }
     document.querySelector('main').append(link);
     return;
   }
+  let chooseAnotherAccount = false;
   async function startGoogleSignIn() {
-    status.textContent = 'Google 계정 선택 화면을 여는 중이에요.';
+    status.textContent = 'Google에 연결하고 있어요.';
     signIn.disabled = true;
     try {
       const settings = await request('/auth/v1/settings','GET');
@@ -108,7 +109,8 @@ button:disabled { opacity: .65; cursor: wait; }
       const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
       sessionStorage.setItem(flowKey,JSON.stringify({verifier,created:Date.now(),route:location.hash}));
       const url = new URL(base+'/auth/v1/authorize');
-      url.search = new URLSearchParams({provider:'google',redirect_to:callback,code_challenge:encode(new Uint8Array(digest)),code_challenge_method:'s256',scopes:workspaceScopes,prompt:'select_account'});
+      url.search = new URLSearchParams({provider:'google',redirect_to:callback,code_challenge:encode(new Uint8Array(digest)),code_challenge_method:'s256',scopes:workspaceScopes});
+      if (chooseAnotherAccount) url.searchParams.set('prompt', 'select_account');
       location.assign(url.href);
     } catch { showSignIn('로그인을 시작하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.'); }
   }
@@ -121,6 +123,7 @@ button:disabled { opacity: .65; cursor: wait; }
   let signedOut = false;
   signOut.onclick = async () => {
     signedOut = true;
+    chooseAnotherAccount = true;
     signOut.disabled = true;
     let token;
     try { token = JSON.parse(sessionStorage.getItem(sessionKey))?.access_token; } catch {}
@@ -163,6 +166,7 @@ button:disabled { opacity: .65; cursor: wait; }
       }
     }
     if ((await request('/rest/v1/rpc/myon_claim_owner_147','POST',{},session.access_token)) !== true) {
+      chooseAnotherAccount = true;
       clear(); await revoke(session.access_token); showSignIn('등록된 마이온 계정으로 다시 로그인해 주세요.'); return;
     }
     sessionStorage.setItem(sessionKey,JSON.stringify(sessionOf(session)));
