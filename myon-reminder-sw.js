@@ -28,3 +28,70 @@ self.addEventListener('notificationclick',event=>{
     return clients.openWindow(target.href);
   })());
 });
+
+
+const recordingCache = 'myon-pending-recordings-v1';
+const recordingReadPath = /^\/myon-shared-recording\/[0-9a-f-]{36}$/u;
+const recordingLimit = 50*1024*1024;
+
+async function removeExpiredRecordings(cache) {
+  for (const key of await cache.keys()) {
+    const item = await cache.match(key);
+    if (Number(item?.headers.get('X-Myon-Recording-Expires') || 0) <= Date.now()) await cache.delete(key);
+  }
+}
+
+function recordingRedirect(id) {
+  return Response.redirect(new URL('/#people//share-recording:'+id,self.location.origin),303);
+}
+
+async function receiveSharedRecording(request) {
+  try {
+    const form = await request.formData();
+    const items = form.getAll('recording');
+    const file = items[0];
+    if (items.length!==1 || !(file instanceof File) || !file.size || file.size>recordingLimit ||
+        !/\.(m4a|mp3|wav|ogg)$/iu.test(file.name)) return recordingRedirect('file');
+    const cache = await caches.open(recordingCache);
+    await removeExpiredRecordings(cache);
+    // Retain a few recent shares while an installed copy is opening or signing in.
+    const keys = await cache.keys();
+    for (const key of keys.slice(0,Math.max(0,keys.length-2))) await cache.delete(key);
+    const id = crypto.randomUUID();
+    const key = new URL('/myon-shared-recording/'+id,self.location.origin);
+    const name = file.name.toWellFormed();
+    await cache.put(key,new Response(file,{headers:{
+      'Content-Type':'application/octet-stream','Cache-Control':'no-store',
+      'X-Myon-Recording-Name':encodeURIComponent(name),
+      'X-Myon-Recording-Expires':String(Date.now()+15*60*1000)
+    }}));
+    return recordingRedirect(id);
+  } catch { return recordingRedirect('storage'); }
+}
+
+async function readSharedRecording(request) {
+  const cache = await caches.open(recordingCache);
+  await removeExpiredRecordings(cache);
+  const item = await cache.match(request.url);
+  if (!item || !await cache.delete(request.url)) return new Response(null,{status:404});
+  return item;
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch',event=>{
+  const url = new URL(event.request.url);
+  if (url.origin!==self.location.origin) return;
+  if (event.request.method==='POST' && url.pathname==='/myon-share-recording') {
+    event.respondWith(receiveSharedRecording(event.request));
+  } else if (event.request.method==='GET' && recordingReadPath.test(url.pathname) &&
+             event.request.headers.get('X-Myon-Recording')==='1') {
+    event.respondWith(readSharedRecording(event.request));
+  }
+});
